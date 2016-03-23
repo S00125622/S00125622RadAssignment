@@ -2,117 +2,103 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
 using System.Linq;
 using System.Net;
-using System.Web;
-using System.Web.Mvc;
+using System.Net.Http;
+using System.Web.Http;
+using System.Web.Http.Description;
 using S00125622RadAss2.Models;
 
 namespace S00125622RadAss2.Controllers
 {
-    public class DirectorsController : Controller
+    public class DirectorsController : ApiController
     {
         private MovieContext db = new MovieContext();
 
-        // GET: Directors
-        public ActionResult Index()
+        // GET: api/Directors
+        public IQueryable<Director> GetDirectors()
         {
-            return View(db.Directors.ToList());
+            return db.Directors;
         }
 
-        // GET: Directors/Details/5
-        public ActionResult Details(int? id)
+        // GET: api/Directors/5
+        [ResponseType(typeof(Director))]
+        public IHttpActionResult GetDirector(int id)
         {
-            if (id == null)
-            {
-                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
-            }
             Director director = db.Directors.Find(id);
             if (director == null)
             {
-                return HttpNotFound();
+                return NotFound();
             }
-            return View(director);
+
+            return Ok(director);
         }
 
-        // GET: Directors/Create
-        public ActionResult Create()
+        // PUT: api/Directors/5
+        [ResponseType(typeof(void))]
+        public IHttpActionResult PutDirector(int id, Director director)
         {
-            return View();
-        }
-
-        // POST: Directors/Create
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Create([Bind(Include = "Id,Name")] Director director)
-        {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                db.Directors.Add(director);
+                return BadRequest(ModelState);
+            }
+
+            if (id != director.Id)
+            {
+                return BadRequest();
+            }
+
+            db.Entry(director).State = EntityState.Modified;
+
+            try
+            {
                 db.SaveChanges();
-                return RedirectToAction("Index");
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!DirectorExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
             }
 
-            return View(director);
+            return StatusCode(HttpStatusCode.NoContent);
         }
 
-        // GET: Directors/Edit/5
-        public ActionResult Edit(int? id)
+        // POST: api/Directors
+        [ResponseType(typeof(Director))]
+        public IHttpActionResult PostDirector(Director director)
         {
-            if (id == null)
+            if (!ModelState.IsValid)
             {
-                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+                return BadRequest(ModelState);
             }
+
+            db.Directors.Add(director);
+            db.SaveChanges();
+
+            return CreatedAtRoute("DefaultApi", new { id = director.Id }, director);
+        }
+
+        // DELETE: api/Directors/5
+        [ResponseType(typeof(Director))]
+        public IHttpActionResult DeleteDirector(int id)
+        {
             Director director = db.Directors.Find(id);
             if (director == null)
             {
-                return HttpNotFound();
+                return NotFound();
             }
-            return View(director);
-        }
 
-        // POST: Directors/Edit/5
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Edit([Bind(Include = "Id,Name")] Director director)
-        {
-            if (ModelState.IsValid)
-            {
-                db.Entry(director).State = EntityState.Modified;
-                db.SaveChanges();
-                return RedirectToAction("Index");
-            }
-            return View(director);
-        }
-
-        // GET: Directors/Delete/5
-        public ActionResult Delete(int? id)
-        {
-            if (id == null)
-            {
-                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
-            }
-            Director director = db.Directors.Find(id);
-            if (director == null)
-            {
-                return HttpNotFound();
-            }
-            return View(director);
-        }
-
-        // POST: Directors/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public ActionResult DeleteConfirmed(int id)
-        {
-            Director director = db.Directors.Find(id);
             db.Directors.Remove(director);
             db.SaveChanges();
-            return RedirectToAction("Index");
+
+            return Ok(director);
         }
 
         protected override void Dispose(bool disposing)
@@ -122,6 +108,11 @@ namespace S00125622RadAss2.Controllers
                 db.Dispose();
             }
             base.Dispose(disposing);
+        }
+
+        private bool DirectorExists(int id)
+        {
+            return db.Directors.Count(e => e.Id == id) > 0;
         }
     }
 }

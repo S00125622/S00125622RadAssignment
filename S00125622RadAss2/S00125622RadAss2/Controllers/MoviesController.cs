@@ -2,122 +2,103 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
 using System.Linq;
 using System.Net;
-using System.Web;
-using System.Web.Mvc;
+using System.Net.Http;
+using System.Web.Http;
+using System.Web.Http.Description;
 using S00125622RadAss2.Models;
 
 namespace S00125622RadAss2.Controllers
 {
-    public class MoviesController : Controller
+    public class MoviesController : ApiController
     {
         private MovieContext db = new MovieContext();
 
-        // GET: Movies
-        public ActionResult Index()
+        // GET: api/Movies
+        public IQueryable<Movie> GetMovies()
         {
-            var movies = db.Movies.Include(m => m.Director);
-            return View(movies.ToList());
+            return db.Movies;
         }
 
-        // GET: Movies/Details/5
-        public ActionResult Details(int? id)
+        // GET: api/Movies/5
+        [ResponseType(typeof(Movie))]
+        public IHttpActionResult GetMovie(int id)
         {
-            if (id == null)
-            {
-                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
-            }
             Movie movie = db.Movies.Find(id);
             if (movie == null)
             {
-                return HttpNotFound();
+                return NotFound();
             }
-            return View(movie);
+
+            return Ok(movie);
         }
 
-        // GET: Movies/Create
-        public ActionResult Create()
+        // PUT: api/Movies/5
+        [ResponseType(typeof(void))]
+        public IHttpActionResult PutMovie(int id, Movie movie)
         {
-            ViewBag.DirectorId = new SelectList(db.Directors, "Id", "Name");
-            return View();
-        }
-
-        // POST: Movies/Create
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Create([Bind(Include = "Id,Title,Year,Genre,DirectorId")] Movie movie)
-        {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                db.Movies.Add(movie);
+                return BadRequest(ModelState);
+            }
+
+            if (id != movie.Id)
+            {
+                return BadRequest();
+            }
+
+            db.Entry(movie).State = EntityState.Modified;
+
+            try
+            {
                 db.SaveChanges();
-                return RedirectToAction("Index");
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!MovieExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
             }
 
-            ViewBag.DirectorId = new SelectList(db.Directors, "Id", "Name", movie.DirectorId);
-            return View(movie);
+            return StatusCode(HttpStatusCode.NoContent);
         }
 
-        // GET: Movies/Edit/5
-        public ActionResult Edit(int? id)
+        // POST: api/Movies
+        [ResponseType(typeof(Movie))]
+        public IHttpActionResult PostMovie(Movie movie)
         {
-            if (id == null)
+            if (!ModelState.IsValid)
             {
-                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+                return BadRequest(ModelState);
             }
+
+            db.Movies.Add(movie);
+            db.SaveChanges();
+
+            return CreatedAtRoute("DefaultApi", new { id = movie.Id }, movie);
+        }
+
+        // DELETE: api/Movies/5
+        [ResponseType(typeof(Movie))]
+        public IHttpActionResult DeleteMovie(int id)
+        {
             Movie movie = db.Movies.Find(id);
             if (movie == null)
             {
-                return HttpNotFound();
+                return NotFound();
             }
-            ViewBag.DirectorId = new SelectList(db.Directors, "Id", "Name", movie.DirectorId);
-            return View(movie);
-        }
 
-        // POST: Movies/Edit/5
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Edit([Bind(Include = "Id,Title,Year,Genre,DirectorId")] Movie movie)
-        {
-            if (ModelState.IsValid)
-            {
-                db.Entry(movie).State = EntityState.Modified;
-                db.SaveChanges();
-                return RedirectToAction("Index");
-            }
-            ViewBag.DirectorId = new SelectList(db.Directors, "Id", "Name", movie.DirectorId);
-            return View(movie);
-        }
-
-        // GET: Movies/Delete/5
-        public ActionResult Delete(int? id)
-        {
-            if (id == null)
-            {
-                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
-            }
-            Movie movie = db.Movies.Find(id);
-            if (movie == null)
-            {
-                return HttpNotFound();
-            }
-            return View(movie);
-        }
-
-        // POST: Movies/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public ActionResult DeleteConfirmed(int id)
-        {
-            Movie movie = db.Movies.Find(id);
             db.Movies.Remove(movie);
             db.SaveChanges();
-            return RedirectToAction("Index");
+
+            return Ok(movie);
         }
 
         protected override void Dispose(bool disposing)
@@ -127,6 +108,11 @@ namespace S00125622RadAss2.Controllers
                 db.Dispose();
             }
             base.Dispose(disposing);
+        }
+
+        private bool MovieExists(int id)
+        {
+            return db.Movies.Count(e => e.Id == id) > 0;
         }
     }
 }
