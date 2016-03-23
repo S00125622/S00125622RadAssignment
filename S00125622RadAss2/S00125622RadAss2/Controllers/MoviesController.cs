@@ -17,7 +17,7 @@ namespace S00125622RadAss2.Controllers
         private MovieContext db = new MovieContext();
 
         // GET: api/Movies
-        public IQueryable<Movie> GetMovies()
+        public IEnumerable<Movie> GetMovies()
         {
             return db.Movies;
         }
