@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.Web.Http;
 using System.Web.Http.Description;
 using S00125622RadAss2.Models;
+using System.Threading.Tasks;
 
 namespace S00125622RadAss2.Controllers
 {
@@ -24,9 +25,9 @@ namespace S00125622RadAss2.Controllers
 
         // GET: api/Directors/5
         [ResponseType(typeof(Director))]
-        public IHttpActionResult GetDirector(int id)
+        public async Task<IHttpActionResult> GetDirector(int id)
         {
-            Director director = db.Directors.Find(id);
+            Director director = await db.Directors.FindAsync(id);
             if (director == null)
             {
                 return NotFound();
@@ -37,7 +38,7 @@ namespace S00125622RadAss2.Controllers
 
         // PUT: api/Directors/5
         [ResponseType(typeof(void))]
-        public IHttpActionResult PutDirector(int id, Director director)
+        public async Task<IHttpActionResult> PutDirector(int id, Director director)
         {
             if (!ModelState.IsValid)
             {
@@ -53,7 +54,7 @@ namespace S00125622RadAss2.Controllers
 
             try
             {
-                db.SaveChanges();
+                await db.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -72,7 +73,7 @@ namespace S00125622RadAss2.Controllers
 
         // POST: api/Directors
         [ResponseType(typeof(Director))]
-        public IHttpActionResult PostDirector(Director director)
+        public async Task<IHttpActionResult> PostDirector(Director director)
         {
             if (!ModelState.IsValid)
             {
@@ -80,23 +81,23 @@ namespace S00125622RadAss2.Controllers
             }
 
             db.Directors.Add(director);
-            db.SaveChanges();
+            await db.SaveChangesAsync();
 
             return CreatedAtRoute("DefaultApi", new { id = director.Id }, director);
         }
 
         // DELETE: api/Directors/5
         [ResponseType(typeof(Director))]
-        public IHttpActionResult DeleteDirector(int id)
+        public async Task<IHttpActionResult> DeleteDirector(int id)
         {
-            Director director = db.Directors.Find(id);
+            Director director = await db.Directors.FindAsync(id);
             if (director == null)
             {
                 return NotFound();
             }
 
             db.Directors.Remove(director);
-            db.SaveChanges();
+            await db.SaveChangesAsync();
 
             return Ok(director);
         }

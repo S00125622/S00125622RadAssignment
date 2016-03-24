@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.Web.Http;
 using System.Web.Http.Description;
 using S00125622RadAss2.Models;
+using System.Threading.Tasks;
 
 namespace S00125622RadAss2.Controllers
 {
@@ -17,16 +18,32 @@ namespace S00125622RadAss2.Controllers
         private MovieContext db = new MovieContext();
 
         // GET: api/Movies
-        public IEnumerable<Movie> GetMovies()
+        public IEnumerable<MovieDTO> GetMovies()
         {
-            return db.Movies;
+            var movies = from m in db.Movies
+                         select new MovieDTO()
+                         {
+                             Id = m.Id,
+                             Title = m.Title,
+                             DirectorName = m.Director.Name
+                         };
+
+            return movies;
         }
 
         // GET: api/Movies/5
-        [ResponseType(typeof(Movie))]
-        public IHttpActionResult GetMovie(int id)
+        [ResponseType(typeof(MovieDetailDTO))]
+        public async Task<IHttpActionResult> GetMovie(int id)
         {
-            Movie movie = db.Movies.Find(id);
+            var movie = await db.Movies.Include(m => m.Director).Select(m =>
+            new MovieDetailDTO()
+            {
+                Id = m.Id,
+                Title = m.Title,
+                Year = m.Year,
+                DirectorName = m.Director.Name,
+                Genre = m.Genre
+            }).SingleOrDefaultAsync(m => m.Id == id);
             if (movie == null)
             {
                 return NotFound();
@@ -72,7 +89,7 @@ namespace S00125622RadAss2.Controllers
 
         // POST: api/Movies
         [ResponseType(typeof(Movie))]
-        public IHttpActionResult PostMovie(Movie movie)
+        public async Task<IHttpActionResult> PostMovie(Movie movie)
         {
             if (!ModelState.IsValid)
             {
@@ -80,23 +97,33 @@ namespace S00125622RadAss2.Controllers
             }
 
             db.Movies.Add(movie);
-            db.SaveChanges();
+            await db.SaveChangesAsync();
+
+            //Load Directors Name
+            db.Entry(movie).Reference(x => x.Director).Load();
+
+            var dto = new MovieDTO()
+            {
+                Id = movie.Id,
+                Title = movie.Title,
+                DirectorName = movie.Director.Name
+            };
 
             return CreatedAtRoute("DefaultApi", new { id = movie.Id }, movie);
         }
 
         // DELETE: api/Movies/5
         [ResponseType(typeof(Movie))]
-        public IHttpActionResult DeleteMovie(int id)
+        public async Task<IHttpActionResult> DeleteMovie(int id)
         {
-            Movie movie = db.Movies.Find(id);
+            Movie movie = await db.Movies.FindAsync(id);
             if (movie == null)
             {
                 return NotFound();
             }
 
             db.Movies.Remove(movie);
-            db.SaveChanges();
+            await db.SaveChangesAsync();
 
             return Ok(movie);
         }
