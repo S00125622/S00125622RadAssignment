@@ -12,6 +12,7 @@ namespace S00125622RadAss2.Migrations
         {
             AutomaticMigrationsEnabled = true;
             AutomaticMigrationDataLossAllowed = true;
+            ContextKey = "CodeMigrations.Models.CodeMigrationsContext";
         }
 
         protected override void Seed(S00125622RadAss2.Models.MovieContext context)
@@ -71,6 +72,28 @@ namespace S00125622RadAss2.Migrations
                 }
 
                 );
+        }
+
+        public partial class InitialCreate : DbMigration
+        {
+            public override void Up()
+            {
+                CreateTable(
+                    "dbo.Movies",
+                    c => new
+                    {
+                        ID = c.Int(nullable: false, identity: true),
+                        Title = c.String(),
+                        Year = c.Int(),
+                        Genre = c.String(),
+                    })
+                    .PrimaryKey(m => m.ID);
+            }
+
+            public override void Down()
+            {
+                DropTable("dbo.Movies");
+            }
         }
     }
 }
